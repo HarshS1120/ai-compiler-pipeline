@@ -1,8 +1,9 @@
-"""LLM interaction utilities using Groq"""
+"""LLM interaction utilities using Groq REST API"""
 import json
 import os
 import time
 import logging
+import httpx
 from dotenv import load_dotenv
 from typing import Dict, Any, Optional
 
@@ -11,44 +12,47 @@ logger = logging.getLogger(__name__)
 
 class LLMHelper:
     def __init__(self, model: str = None):
-        api_key = os.getenv("GROQ_API_KEY")
-        if not api_key:
+        self.api_key = os.getenv("GROQ_API_KEY")
+        if not self.api_key:
             raise ValueError("GROQ_API_KEY not found in environment variables")
         
-        import groq
-        
-        # Check what's available in the groq module
-        if hasattr(groq, 'Groq'):
-            self.client = groq.Groq(api_key=api_key)
-        elif hasattr(groq, 'Client'):
-            self.client = groq.Client(api_key=api_key)
-        else:
-            # Use the module directly if it's already a client
-            self.client = groq
-        
         self.model = model or os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+        self.base_url = "https://api.groq.com/openai/v1"
+    
     def complete(self, 
                  system_prompt: str, 
                  user_prompt: str,
                  temperature: float = 0.1,
                  max_tokens: int = 4000,
                  json_mode: bool = True) -> Dict[str, Any]:
-        """Make an LLM call with structured output expectation"""
+        """Make an LLM call using Groq REST API directly"""
         
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ]
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            "temperature": temperature,
+            "max_tokens": max_tokens
+        }
         
         try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens,
+            response = httpx.post(
+                f"{self.base_url}/chat/completions",
+                headers=headers,
+                json=payload,
+                timeout=60.0
             )
+            response.raise_for_status()
             
-            content = response.choices[0].message.content
+            data = response.json()
+            content = data["choices"][0]["message"]["content"]
             
             if json_mode:
                 return self._parse_json(content)
