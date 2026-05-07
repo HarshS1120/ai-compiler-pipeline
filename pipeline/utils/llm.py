@@ -15,20 +15,18 @@ class LLMHelper:
         if not api_key:
             raise ValueError("GROQ_API_KEY not found in environment variables")
         
-        # Import groq client - handle both import styles
-        try:
-            from groq import Groq
-            self.client = Groq(api_key=api_key)
-        except ImportError:
-            try:
-                import groq
-                self.client = groq.Client(api_key=api_key)
-            except:
-                from groq import Client
-                self.client = Client(api_key=api_key)
+        import groq
+        
+        # Check what's available in the groq module
+        if hasattr(groq, 'Groq'):
+            self.client = groq.Groq(api_key=api_key)
+        elif hasattr(groq, 'Client'):
+            self.client = groq.Client(api_key=api_key)
+        else:
+            # Use the module directly if it's already a client
+            self.client = groq
         
         self.model = model or os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
-    
     def complete(self, 
                  system_prompt: str, 
                  user_prompt: str,
