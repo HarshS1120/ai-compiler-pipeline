@@ -3,7 +3,6 @@ import json
 from typing import Dict, Any, List
 from pipeline.base import PipelineStage
 from pipeline.utils.llm import LLMHelper
-from pipeline.config import IntentSchema, Feature, Role, Entity
 
 class IntentExtractor(PipelineStage):
     """Extracts structured intent from natural language prompts"""
