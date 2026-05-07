@@ -56,11 +56,5 @@ Success rate: 100% on test prompts
 Auto-repairs: 3-10 per generation
 
 
-### Step 7.2: Create .env.example
-
-```cmd
-echo GROQ_API_KEY=your_key_here > .env.example
-echo GROQ_MODEL=llama-3.1-8b-instant >> .env.example
-
-Step 7.3: Final test run
+Final test run
 python test_frontend.py
