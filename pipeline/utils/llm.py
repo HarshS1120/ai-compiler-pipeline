@@ -1,10 +1,10 @@
 """LLM interaction utilities using Groq"""
-from groq import Groq
 import json
 import os
+import time
+import logging
 from dotenv import load_dotenv
 from typing import Dict, Any, Optional
-import logging
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -15,8 +15,18 @@ class LLMHelper:
         if not api_key:
             raise ValueError("GROQ_API_KEY not found in environment variables")
         
-        import groq
-        self.client = groq.Client(api_key=api_key)
+        # Import groq client - handle both import styles
+        try:
+            from groq import Groq
+            self.client = Groq(api_key=api_key)
+        except ImportError:
+            try:
+                import groq
+                self.client = groq.Client(api_key=api_key)
+            except:
+                from groq import Client
+                self.client = Client(api_key=api_key)
+        
         self.model = model or os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
     
     def complete(self, 
@@ -38,16 +48,10 @@ class LLMHelper:
                 messages=messages,
                 temperature=temperature,
                 max_tokens=max_tokens,
-                # Groq doesn't have native JSON mode, but we can request it in prompt
             )
             
             content = response.choices[0].message.content
             
-            # Log token usage
-            usage = response.usage
-            logger.info(f"Tokens used - Prompt: {usage.prompt_tokens}, Completion: {usage.completion_tokens}, Total: {usage.total_tokens}")
-            
-            # Try to parse as JSON
             if json_mode:
                 return self._parse_json(content)
             else:
@@ -59,7 +63,6 @@ class LLMHelper:
     
     def _parse_json(self, content: str) -> Dict[str, Any]:
         """Parse JSON from LLM response with cleanup"""
-        # Remove markdown code blocks if present
         content = content.strip()
         if content.startswith("```json"):
             content = content[7:]
@@ -75,7 +78,6 @@ class LLMHelper:
         except json.JSONDecodeError as e:
             logger.warning(f"JSON parse error: {e}")
             
-            # Try to extract JSON from the content
             start = content.find("{")
             end = content.rfind("}") + 1
             
@@ -85,7 +87,6 @@ class LLMHelper:
                 except json.JSONDecodeError:
                     pass
             
-            # Return error with raw content
             return {
                 "error": "JSONParseError",
                 "raw_output": content,
@@ -93,13 +94,11 @@ class LLMHelper:
             }
     
     def complete_with_retry(self,
-                        system_prompt: str,
-                        user_prompt: str,
-                        max_retries: int = 3,
-                        **kwargs) -> Dict[str, Any]:
+                           system_prompt: str,
+                           user_prompt: str,
+                           max_retries: int = 3,
+                           **kwargs) -> Dict[str, Any]:
         """Complete with automatic retry on JSON parse failure"""
-        import time
-        
         for attempt in range(max_retries):
             result = self.complete(system_prompt, user_prompt, **kwargs)
             
@@ -107,11 +106,6 @@ class LLMHelper:
                 return result
             
             logger.warning(f"Attempt {attempt + 1} failed, retrying...")
-            
-            # Add delay before retry
             time.sleep(1)
-            
-            # Make the prompt more strict on retry
-            user_prompt += f"\n\nIMPORTANT: You MUST respond with ONLY valid JSON. Previous attempt failed with: {result.get('parse_error', 'Unknown error')}"
         
         return result
