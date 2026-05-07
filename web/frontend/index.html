@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Compiler Pipeline</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 1px solid #30363d;
+            margin-bottom: 30px;
+        }
+        h1 {
+            color: #58a6ff;
+            font-size: 2em;
+            margin-bottom: 8px;
+        }
+        .subtitle {
+            color: #8b949e;
+            font-size: 14px;
+        }
+        .pipeline-visual {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .pipeline-step {
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: 12px;
+            color: #8b949e;
+        }
+        .pipeline-arrow {
+            color: #30363d;
+            padding: 8px 0;
+        }
+        .input-section {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .input-section label {
+            display: block;
+            margin-bottom: 8px;
+            color: #8b949e;
+            font-weight: 500;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #c9d1d9;
+            padding: 12px;
+            font-size: 14px;
+            resize: vertical;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #58a6ff;
+        }
+        .button-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+        .btn-generate {
+            background: #238636;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        .btn-generate:hover { background: #2ea043; }
+        .btn-generate:disabled { 
+            background: #30363d; 
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .btn-clear {
+            background: #21262d;
+            color: #8b949e;
+            border: 1px solid #30363d;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+        .btn-clear:hover {
+            background: #30363d;
+            color: #c9d1d9;
+        }
+        .example-prompts {
+            margin-top: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+        }
+        .example-label {
+            color: #8b949e;
+            font-size: 12px;
+        }
+        .example-btn {
+            background: #21262d;
+            border: 1px solid #30363d;
+            color: #8b949e;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        .example-btn:hover {
+            background: #30363d;
+            color: #c9d1d9;
+        }
+        .output-section {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .metric-card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+        .metric-value {
+            font-size: 24px;
+            color: #58a6ff;
+            font-weight: bold;
+        }
+        .metric-label {
+            font-size: 11px;
+            color: #8b949e;
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .metric-value.success { color: #3fb950; }
+        .metric-value.warning { color: #d2991d; }
+        .tabs {
+            display: flex;
+            gap: 2px;
+            flex-wrap: wrap;
+        }
+        .tab {
+            padding: 10px 20px;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px 6px 0 0;
+            cursor: pointer;
+            color: #8b949e;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+            border-bottom: none;
+        }
+        .tab:hover {
+            background: #30363d;
+            color: #c9d1d9;
+        }
+        .tab.active {
+            background: #161b22;
+            color: #58a6ff;
+            border-color: #30363d;
+            border-bottom: 2px solid #58a6ff;
+        }
+        .tab-content {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 0 0 8px 8px;
+            padding: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .tab-content pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #7ee787;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #8b949e;
+            display: none;
+        }
+        .spinner {
+            border: 3px solid #30363d;
+            border-top: 3px solid #58a6ff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error-box {
+            color: #f85149;
+            padding: 12px 16px;
+            background: #161b22;
+            border: 1px solid #f85149;
+            border-radius: 6px;
+            margin: 12px 0;
+            display: none;
+            font-size: 14px;
+        }
+        .stage-log {
+            margin-top: 16px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .stage-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .stage-badge.pending {
+            background: #21262d;
+            color: #8b949e;
+            border: 1px solid #30363d;
+        }
+        .stage-badge.running {
+            background: #1a2332;
+            color: #58a6ff;
+            border: 1px solid #1f6feb;
+            animation: pulse 1.5s infinite;
+        }
+        .stage-badge.completed {
+            background: #1a2e1a;
+            color: #3fb950;
+            border: 1px solid #238636;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: #484f58;
+            font-size: 12px;
+            border-top: 1px solid #30363d;
+            margin-top: 40px;
+        }
+        .stats-row {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+        .stat-item {
+            font-size: 12px;
+            color: #8b949e;
+        }
+        .stat-value {
+            color: #58a6ff;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🧠 AI Compiler Pipeline</h1>
+            <p class="subtitle">Natural Language → Structured Config → Validated → Executable</p>
+            <div class="pipeline-visual">
+                <span class="pipeline-step">Intent</span>
+                <span class="pipeline-arrow">→</span>
+                <span class="pipeline-step">Design</span>
+                <span class="pipeline-arrow">→</span>
+                <span class="pipeline-step">Schemas</span>
+                <span class="pipeline-arrow">→</span>
+                <span class="pipeline-step">Validate</span>
+                <span class="pipeline-arrow">→</span>
+                <span class="pipeline-step">Repair</span>
+            </div>
+        </header>
+        
+        <div class="input-section">
+            <label>📝 Describe your application in natural language:</label>
+            <textarea 
+                id="prompt" 
+                placeholder="e.g., Build a CRM with login, contacts, dashboard, role-based access, and premium plan with payments. Admins can see analytics."
+            ></textarea>
+            
+            <div class="button-row">
+                <button class="btn-generate" id="generateBtn" onclick="generate()">
+                    ⚡ Generate Configuration
+                </button>
+                <button class="btn-clear" onclick="clearAll()">
+                    🗑️ Clear
+                </button>
+            </div>
+            
+            <div class="example-prompts">
+                <span class="example-label">Examples:</span>
+                <button class="example-btn" onclick="setExample('crm')">CRM System</button>
+                <button class="example-btn" onclick="setExample('ecommerce')">E-commerce</button>
+                <button class="example-btn" onclick="setExample('saas')">SaaS Dashboard</button>
+                <button class="example-btn" onclick="setExample('healthcare')">Healthcare</button>
+                <button class="example-btn" onclick="setExample('vague')">Vague Input</button>
+            </div>
+        </div>
+        
+        <div id="errorBox" class="error-box"></div>
+        
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Compiling your application...</p>
+            <div class="stage-log" id="stageLog">
+                <span class="stage-badge pending">Intent Extraction</span>
+                <span class="stage-badge pending">System Design</span>
+                <span class="stage-badge pending">Schema Generation</span>
+                <span class="stage-badge pending">Validation</span>
+                <span class="stage-badge pending">Repair</span>
+            </div>
+        </div>
+        
+        <div id="output" class="output-section">
+            <div class="metrics" id="metrics"></div>
+            <div class="tabs" id="tabs"></div>
+            <div class="tab-content" id="tabContent">
+                <pre>Select a tab to view schema</pre>
+            </div>
+            <div class="stats-row" id="statsRow"></div>
+        </div>
+        
+        <footer>
+            AI Compiler Pipeline — Multi-stage system for deterministic software generation
+        </footer>
+    </div>
+
+    <script>
+        // Example prompts
+        const examples = {
+            crm: "Build a CRM with login, contacts, dashboard, role-based access, and premium plan with payments. Admins can see analytics.",
+            ecommerce: "Create an e-commerce store with product listings, shopping cart, checkout with Stripe payments, user accounts, and an admin panel for managing inventory.",
+            saas: "Build a SaaS analytics dashboard with team management, project tracking, real-time notifications, and tiered subscription plans (free, pro, enterprise).",
+            healthcare: "Build a healthcare appointment system with patient portals, doctor schedules, video consultations, and prescription management.",
+            vague: "I want an app for my business"
+        };
+
+        function setExample(type) {
+            document.getElementById('prompt').value = examples[type];
+            document.getElementById('prompt').focus();
+        }
+
+        function clearAll() {
+            document.getElementById('prompt').value = '';
+            document.getElementById('output').style.display = 'none';
+            document.getElementById('errorBox').style.display = 'none';
+            document.getElementById('prompt').focus();
+        }
+
+        async function generate() {
+            const prompt = document.getElementById('prompt').value.trim();
+            
+            // Validation
+            if (!prompt) {
+                showError('Please enter a description of your application.');
+                return;
+            }
+            if (prompt.length < 5) {
+                showError('Please provide a more detailed description (at least 5 characters).');
+                return;
+            }
+
+            // UI state
+            const btn = document.getElementById('generateBtn');
+            const loading = document.getElementById('loading');
+            const output = document.getElementById('output');
+            const errorBox = document.getElementById('errorBox');
+
+            btn.disabled = true;
+            btn.textContent = '⏳ Generating...';
+            loading.style.display = 'block';
+            output.style.display = 'none';
+            errorBox.style.display = 'none';
+            
+            // Animate stages
+            animateStages();
+
+            const startTime = performance.now();
+
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt })
+                });
+
+                const data = await response.json();
+                const duration = ((performance.now() - startTime) / 1000).toFixed(2);
+
+                if (data.success) {
+                    displayOutput(data, duration);
+                } else {
+                    const errorMsg = data.detail || data.error || 'Generation failed';
+                    showError(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
+                }
+            } catch (e) {
+                showError('Connection error. Make sure the server is running on port 8000.');
+                console.error('Error:', e);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '⚡ Generate Configuration';
+                loading.style.display = 'none';
+            }
+        }
+
+        function animateStages() {
+            const stages = ['Intent Extraction', 'System Design', 'Schema Generation', 'Validation', 'Repair'];
+            const stageLog = document.getElementById('stageLog');
+            
+            stageLog.innerHTML = stages.map(s => 
+                `<span class="stage-badge pending">${s}</span>`
+            ).join('');
+            
+            // Animate through stages (visual only)
+            const badges = stageLog.querySelectorAll('.stage-badge');
+            let delay = 0;
+            badges.forEach((badge, i) => {
+                setTimeout(() => {
+                    badge.className = 'stage-badge running';
+                }, delay);
+                delay += 600;
+                setTimeout(() => {
+                    badge.className = 'stage-badge completed';
+                }, delay);
+            });
+        }
+
+        function displayOutput(data, totalDuration) {
+            const output = document.getElementById('output');
+            output.style.display = 'block';
+            
+            // Scroll to output
+            output.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            const metadata = data.metadata || {};
+            const repairsMade = metadata.repairs_made || 0;
+            const finalWarnings = (metadata.final_warnings || []).length;
+            const finalIssues = (metadata.final_issues || []).length;
+            const stagesCount = (metadata.stages || []).filter(s => s.status === 'completed').length;
+
+            // Display metrics
+            const metricsHtml = `
+                <div class="metric-card">
+                    <div class="metric-value">${totalDuration}s</div>
+                    <div class="metric-label">Total Time</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value success">${stagesCount}/5</div>
+                    <div class="metric-label">Stages Complete</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value success">${repairsMade}</div>
+                    <div class="metric-label">Auto-Repairs</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value ${finalWarnings > 0 ? 'warning' : 'success'}">${finalWarnings}</div>
+                    <div class="metric-label">Warnings</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value ${finalIssues > 0 ? 'warning' : 'success'}">${finalIssues}</div>
+                    <div class="metric-label">Issues</div>
+                </div>
+            `;
+            document.getElementById('metrics').innerHTML = metricsHtml;
+
+            // Get output data
+            const outputData = data.output || {};
+            
+            // Tab configuration
+            const tabConfig = {
+                'ui': { label: '🎨 UI Schema', data: outputData.ui || {} },
+                'api': { label: '🔌 API Schema', data: outputData.api || {} },
+                'database': { label: '🗄️ Database Schema', data: outputData.database || {} },
+                'auth': { label: '🔐 Auth Schema', data: outputData.auth || {} },
+                '_repairs': { label: '🔧 Repairs', data: outputData._repairs || {} },
+                '_validation': { label: '✅ Validation', data: outputData._validation || {} }
+            };
+            
+            // Store for tab switching
+            window.tabConfig = tabConfig;
+            
+            // Create tabs
+            let tabsHtml = '';
+            let firstKey = null;
+            for (const [key, config] of Object.entries(tabConfig)) {
+                if (!firstKey) firstKey = key;
+                tabsHtml += `<div class="tab" onclick="showTab('${key}', this)">${config.label}</div>`;
+            }
+            document.getElementById('tabs').innerHTML = tabsHtml;
+            
+            // Show first tab
+            if (firstKey) {
+                const firstTab = document.querySelector('.tab');
+                if (firstTab) firstTab.classList.add('active');
+                showTabContent(firstKey);
+            }
+            
+            // Show stage details
+            const stages = (metadata.stages || []).map(s => {
+                let details = `${s.stage}: ${s.status}`;
+                if (s.duration) details += ` (${s.duration.toFixed(2)}s)`;
+                if (s.repairs) details += ` [${s.repairs} repairs]`;
+                if (s.warnings !== undefined) details += ` [${s.warnings} warnings]`;
+                return details;
+            }).join(' | ');
+            
+            document.getElementById('statsRow').innerHTML = `
+                <span class="stat-item">Pipeline: <span class="stat-value">${stages}</span></span>
+            `;
+        }
+
+        function showTab(key, element) {
+            // Update active tab styling
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            if (element) {
+                element.classList.add('active');
+            }
+            
+            showTabContent(key);
+        }
+
+        function showTabContent(key) {
+            const config = window.tabConfig ? window.tabConfig[key] : null;
+            const data = config ? config.data : {};
+            
+            // Format JSON nicely
+            const jsonStr = JSON.stringify(data, null, 2);
+            
+            document.getElementById('tabContent').innerHTML = 
+                '<pre>' + escapeHtml(jsonStr) + '</pre>';
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        function showError(msg) {
+            const errorBox = document.getElementById('errorBox');
+            errorBox.style.display = 'block';
+            errorBox.textContent = '❌ ' + msg;
+            errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        // Keyboard shortcuts
+        document.getElementById('prompt').addEventListener('keydown', (e) => {
+            // Ctrl+Enter to generate
+            if (e.ctrlKey && e.key === 'Enter') {
+                generate();
+            }
+            // Escape to clear
+            if (e.key === 'Escape') {
+                clearAll();
+            }
+        });
+
+        // Focus textarea on load
+        document.getElementById('prompt').focus();
+    </script>
+</body>
+</html>

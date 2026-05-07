@@ -1,0 +1,116 @@
+{
+  "real_world_prompts": [
+    {
+      "id": "real_01",
+      "prompt": "Build a CRM with login, contacts, dashboard, role-based access, and premium plan with payments. Admins can see analytics.",
+      "expected_features": ["login", "contacts", "dashboard", "premium", "payments", "analytics", "role-based access"]
+    },
+    {
+      "id": "real_02",
+      "prompt": "Create an e-commerce store with product listings, shopping cart, checkout with Stripe payments, user accounts, and an admin panel for managing inventory.",
+      "expected_features": ["products", "cart", "checkout", "payments", "accounts", "admin panel", "inventory"]
+    },
+    {
+      "id": "real_03",
+      "prompt": "Build a project management tool with task boards, team collaboration, file sharing, time tracking, and Gantt charts.",
+      "expected_features": ["task boards", "collaboration", "file sharing", "time tracking", "gantt charts"]
+    },
+    {
+      "id": "real_04",
+      "prompt": "Create a social media dashboard with post scheduling, analytics, multi-account management, and engagement tracking.",
+      "expected_features": ["post scheduling", "analytics", "multi-account", "engagement tracking"]
+    },
+    {
+      "id": "real_05",
+      "prompt": "Build a healthcare appointment system with patient portals, doctor schedules, video consultations, and prescription management.",
+      "expected_features": ["appointments", "patient portal", "doctor schedules", "video consultations", "prescriptions"]
+    },
+    {
+      "id": "real_06",
+      "prompt": "Create a learning management system with course creation, student enrollment, quizzes, progress tracking, and certificates.",
+      "expected_features": ["courses", "enrollment", "quizzes", "progress tracking", "certificates"]
+    },
+    {
+      "id": "real_07",
+      "prompt": "Build a real estate platform with property listings, map search, agent profiles, mortgage calculator, and virtual tours.",
+      "expected_features": ["listings", "map search", "agent profiles", "mortgage calculator", "virtual tours"]
+    },
+    {
+      "id": "real_08",
+      "prompt": "Create a food delivery app with restaurant menus, order tracking, delivery management, ratings, and payment integration.",
+      "expected_features": ["menus", "order tracking", "delivery management", "ratings", "payments"]
+    },
+    {
+      "id": "real_09",
+      "prompt": "Build a customer support ticketing system with ticket routing, knowledge base, live chat, SLA management, and reporting.",
+      "expected_features": ["ticketing", "routing", "knowledge base", "live chat", "SLA", "reporting"]
+    },
+    {
+      "id": "real_10",
+      "prompt": "Create a fitness tracking app with workout plans, nutrition logging, progress photos, social challenges, and wearable integration.",
+      "expected_features": ["workout plans", "nutrition", "progress photos", "challenges", "wearable integration"]
+    }
+  ],
+  "edge_cases": [
+    {
+      "id": "edge_01",
+      "type": "vague",
+      "prompt": "I need an app for my business",
+      "expected_behavior": "should ask for clarification or make documented assumptions"
+    },
+    {
+      "id": "edge_02",
+      "type": "vague",
+      "prompt": "Make me a website",
+      "expected_behavior": "should ask for clarification or create minimal setup"
+    },
+    {
+      "id": "edge_03",
+      "type": "conflicting",
+      "prompt": "Build a public blog where only admins can see posts and everyone can edit",
+      "expected_behavior": "should detect and handle conflicting requirements"
+    },
+    {
+      "id": "edge_04",
+      "type": "conflicting",
+      "prompt": "Create a free app with premium features that requires payment for basic access",
+      "expected_behavior": "should identify logical contradiction"
+    },
+    {
+      "id": "edge_05",
+      "type": "incomplete",
+      "prompt": "Build an app with login",
+      "expected_behavior": "should generate minimal but functional configuration"
+    },
+    {
+      "id": "edge_06",
+      "type": "incomplete",
+      "prompt": "I want users, and stuff",
+      "expected_behavior": "should make reasonable assumptions"
+    },
+    {
+      "id": "edge_07",
+      "type": "ambiguous",
+      "prompt": "Build a platform for content creators with monetization",
+      "expected_behavior": "should interpret broadly and document assumptions"
+    },
+    {
+      "id": "edge_08",
+      "type": "ambiguous",
+      "prompt": "Create something like Uber but for dogs",
+      "expected_behavior": "should handle unusual use case gracefully"
+    },
+    {
+      "id": "edge_09",
+      "type": "mixed",
+      "prompt": "Build a simple calculator app with user authentication, payment processing, and real-time collaboration",
+      "expected_behavior": "should handle scope inconsistencies"
+    },
+    {
+      "id": "edge_10",
+      "type": "technical",
+      "prompt": "Build an app with quantum computing integration and blockchain AI",
+      "expected_behavior": "should handle technically impossible requirements gracefully"
+    }
+  ]
+}
