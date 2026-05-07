@@ -72,6 +72,25 @@ async def generate(request: PromptRequest):
         }
 
 # Serve static files from frontend
-frontend_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend")
-if os.path.exists(frontend_path):
-    app.mount("/app", StaticFiles(directory=frontend_path, html=True), name="frontend")
+# Serve frontend at root
+from fastapi.responses import FileResponse
+
+@app.get("/app")
+async def serve_frontend():
+    frontend_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
+        "frontend", 
+        "index.html"
+    )
+    return FileResponse(frontend_path)
+
+@app.get("/app/{path:path}")
+async def serve_frontend_files(path: str):
+    frontend_dir = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
+        "frontend"
+    )
+    file_path = os.path.join(frontend_dir, path)
+    if os.path.exists(file_path):
+        return FileResponse(file_path)
+    return {"error": "File not found"}
