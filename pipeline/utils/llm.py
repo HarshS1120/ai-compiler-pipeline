@@ -15,16 +15,9 @@ class LLMHelper:
         if not api_key:
             raise ValueError("GROQ_API_KEY not found in environment variables")
         
-        self.client = Groq(api_key=api_key)
+        import groq
+        self.client = groq.Client(api_key=api_key)
         self.model = model or os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
-        
-        # Available models for reference
-        self.available_models = [
-            "llama-3.1-8b-instant",
-            "llama-3.1-70b-versatile",
-            "mixtral-8x7b-32768",
-            "gemma2-9b-it"
-        ]
     
     def complete(self, 
                  system_prompt: str, 
